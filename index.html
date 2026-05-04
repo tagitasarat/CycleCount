@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0049)file:///C:/Users/acer/Downloads/cyclecount_4.html -->
+<!-- saved from url=(0049)file:///C:/Users/acer/Downloads/cyclecount_6.html -->
 <html lang="th"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -147,7 +147,7 @@ button:active{opacity:0.8}
 </div>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx5bxNlCW0DR6wqXJgzGcByJcymBUuDi7Zl1u6vdy2qcXhL3yEcsl_XwS2VUW7Rv5uVGA/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyFQU-COALEmBoWhOQulImXjR9yX-RRyEvJZ_aDmub6YGpw90AdhJrVu6wV_wRlbwbFfw/exec";
 const BRANCHES = ["พระจันทร์เภสัช สาขา 1","พระจันทร์เภสัช สาขา 2","พระจันทร์เภสัช สาขา 3","พระจันทร์เภสัช สาขา 4","บางขุนศรีเภสัช"];
 const GRP = {A:{label:"กลุ่ม A",color:"#ef4444",count:5,freq:"ทุกวัน",desc:"ยาแพง / ยาควบคุม"},B:{label:"กลุ่ม B",color:"#f97316",count:4,freq:"ทุกสัปดาห์",desc:"ยาขายดีสูง"},C:{label:"กลุ่ม C",color:"#22c55e",count:3,freq:"ทุกเดือน",desc:"ยาทั่วไป"}};
 
@@ -158,7 +158,10 @@ let iHdrs=[], iRows=[], iMap={code:"",name:"",group:"",location:""};
 let dashData=[], selBranch="";
 
 async function api(action,body={}){
-  const r=await fetch(SCRIPT_URL,{method:"POST",body:JSON.stringify({action,...body})});
+  // Google Apps Script ต้องใช้ GET + URL params เพื่อหลีกเลี่ยง CORS
+  const payload = encodeURIComponent(JSON.stringify({action,...body}));
+  const url = SCRIPT_URL + "?payload=" + payload;
+  const r = await fetch(url, {method:"GET", redirect:"follow"});
   return r.json();
 }
 
