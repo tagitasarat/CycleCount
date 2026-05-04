@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0049)file:///C:/Users/acer/Downloads/cyclecount_7.html -->
+<!-- saved from url=(0050)file:///C:/Users/acer/Downloads/cyclecount_10.html -->
 <html lang="th"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -63,7 +63,7 @@ button:active{opacity:0.8}
         <button onclick="showScreen(&#39;dashboard&#39;);loadDashboard()" style="background:#1e3a5f;border:none;color:#60a5fa;padding:7px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">📊 ทุกสาขา</button>
         <div style="position:relative">
           <button id="btn-menu" onclick="toggleMenu()" style="background:#334155;border:none;color:#94a3b8;width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:16px">⚙️</button>
-          <div id="menu-dropdown" style="display:none;position:absolute;right:0;top:40px;background:#1e293b;border:1px solid #334155;border-radius:10px;overflow:hidden;z-index:100;width:190px;box-shadow:0 8px 24px #00000088">
+          <div id="menu-dropdown" style="display: none; position: absolute; right: 0px; top: 40px; background: rgb(30, 41, 59); border: 1px solid rgb(51, 65, 85); border-radius: 10px; overflow: hidden; z-index: 100; width: 190px; box-shadow: rgba(0, 0, 0, 0.533) 0px 8px 24px;">
             <button onclick="menuAction(&#39;import&#39;)" style="display:flex;align-items:center;gap:10px;width:100%;padding:11px 14px;border:none;background:transparent;color:#e2e8f0;font-size:13px;cursor:pointer;text-align:left;border-bottom:1px solid #1e293b">📂 Import Excel (ทุกสาขา)</button>
             <button onclick="menuAction(&#39;manage&#39;)" style="display:flex;align-items:center;gap:10px;width:100%;padding:11px 14px;border:none;background:transparent;color:#e2e8f0;font-size:13px;cursor:pointer;text-align:left;border-bottom:1px solid #1e293b">🏷️ จัดการกลุ่มยา</button>
             <button onclick="menuAction(&#39;reshuffle&#39;)" style="display:flex;align-items:center;gap:10px;width:100%;padding:11px 14px;border:none;background:transparent;color:#e2e8f0;font-size:13px;cursor:pointer;text-align:left;border-bottom:1px solid #1e293b">🔄 สุ่มรายการใหม่</button>
@@ -157,18 +157,27 @@ let manageDrugs=[], todayList=[], counts={}, sysIn={}, submitted={};
 let iHdrs=[], iRows=[], iMap={code:"",name:"",group:"",location:""};
 let dashData=[], selBranch="";
 
-async function api(action,body={}){
-  // Google Apps Script ต้องใช้ GET + URL params เพื่อหลีกเลี่ยง CORS
-  const payload = encodeURIComponent(JSON.stringify({action,...body}));
-  const url = SCRIPT_URL + "?payload=" + payload;
-  const r = await fetch(url, {method:"GET", redirect:"follow"});
-  return r.json();
+async function api(action, body={}) {
+  const GAS_URL = SCRIPT_URL;
+  // แบ่งข้อมูลถ้าเยอะเกิน สำหรับ saveDrugs
+  if (action === "saveDrugs" && body.drugs && body.drugs.length > 20) {
+    const drugs = body.drugs;
+    // ส่งครั้งแรก clear + 20 ตัวแรก
+    await apiSingle("saveDrugs", { drugs: drugs.slice(0, 20) });
+    // ส่งที่เหลือต่อ
+    for (let i = 20; i < drugs.length; i += 20) {
+      await apiSingle("appendDrugs", { drugs: drugs.slice(i, i + 20) });
+    }
+    return { ok: true };
+  }
+  return apiSingle(action, body);
 }
 
-window.onload=function(){
-  if(branch){showScreen("main");initMain();}
-  else{renderBranchList();}
-};
+async function apiSingle(action, body={}) {
+  const p = encodeURIComponent(JSON.stringify({ action, ...body }));
+  const r = await fetch(SCRIPT_URL + "?payload=" + p, { redirect: "follow" });
+  return r.json();
+}
 
 function renderBranchList(){
   document.getElementById("branch-list").innerHTML=BRANCHES.map(b=>`
@@ -518,6 +527,11 @@ document.addEventListener("click",e=>{
   const m=document.getElementById("menu-dropdown");const b=document.getElementById("btn-menu");
   if(m&&b&&!b.contains(e.target)&&!m.contains(e.target))m.style.display="none";
 });
+
+window.onload=function(){
+  if(branch){showScreen("main");initMain();}
+  else{renderBranchList();}
+};
 </script>
 
 
