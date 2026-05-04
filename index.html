@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<!-- saved from url=(0049)file:///C:/Users/acer/Downloads/cyclecount_2.html -->
+<html lang="th"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CycleCount — พระจันทร์เภสัช</title>
+<script src="./index_files/xlsx.full.min.js.download"></script>
+<link href="./index_files/css2" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Sarabun',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+input,select,button{font-family:'Sarabun',sans-serif}
+.mono{font-family:'JetBrains Mono',monospace}
+.screen{display:none;min-height:100vh}
+.screen.active{display:block}
+button:active{opacity:0.8}
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="screen-setup" class="screen">
+  <div style="background:#1e293b;padding:16px;text-align:center;border-bottom:1px solid #334155">
+    <div style="font-size:20px;font-weight:700;color:#60a5fa">💊 CycleCount</div>
+    <div style="font-size:12px;color:#64748b;margin-top:2px">พระจันทร์เภสัช</div>
+  </div>
+  <div style="padding:24px 16px;max-width:480px;margin:0 auto">
+    <div style="font-size:18px;font-weight:700;color:#e2e8f0;margin-bottom:6px">เลือกสาขาของคุณ</div>
+    <div style="font-size:13px;color:#64748b;margin-bottom:20px">เลือกครั้งเดียว จำไว้ในเครื่อง</div>
+    <div id="branch-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px"></div>
+    <button id="btn-confirm-branch" onclick="confirmBranch()" disabled="" style="width:100%;padding:13px;border-radius:10px;border:none;background:#334155;color:#64748b;font-size:14px;font-weight:700;cursor:not-allowed;transition:all 0.2s">เริ่มใช้งาน →</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="screen-main" class="screen active">
+  <div style="background:#1e293b;border-bottom:1px solid #334155;padding:12px 16px;position:sticky;top:0;z-index:50">
+    <div style="display:flex;align-items:center;justify-content:space-between;max-width:600px;margin:0 auto">
+      <div>
+        <div style="font-size:17px;font-weight:700;color:#60a5fa">💊 CycleCount</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+          <span id="header-branch" style="background:#1e3a5f;color:#60a5fa;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600">พระจันทร์เภสัช สาขา 3</span>
+          <span id="header-progress" style="color:#475569;font-size:11px"></span>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button onclick="showScreen(&#39;dashboard&#39;);loadDashboard()" style="background:#1e3a5f;border:none;color:#60a5fa;padding:7px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">📊 ทุกสาขา</button>
+        <div style="position:relative">
+          <button id="btn-menu" onclick="toggleMenu()" style="background:#334155;border:none;color:#94a3b8;width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:16px">⚙️</button>
+          <div id="menu-dropdown" style="display:none;position:absolute;right:0;top:40px;background:#1e293b;border:1px solid #334155;border-radius:10px;overflow:hidden;z-index:100;width:190px;box-shadow:0 8px 24px #00000088">
+            <button onclick="menuAction(&#39;import&#39;)" style="display:flex;align-items:center;gap:10px;width:100%;padding:11px 14px;border:none;background:transparent;color:#e2e8f0;font-size:13px;cursor:pointer;text-align:left;border-bottom:1px solid #1e293b">📂 Import Excel (ทุกสาขา)</button>
+            <button onclick="menuAction(&#39;manage&#39;)" style="display:flex;align-items:center;gap:10px;width:100%;padding:11px 14px;border:none;background:transparent;color:#e2e8f0;font-size:13px;cursor:pointer;text-align:left;border-bottom:1px solid #1e293b">🏷️ จัดการกลุ่มยา</button>
+            <button onclick="menuAction(&#39;reshuffle&#39;)" style="display:flex;align-items:center;gap:10px;width:100%;padding:11px 14px;border:none;background:transparent;color:#e2e8f0;font-size:13px;cursor:pointer;text-align:left;border-bottom:1px solid #1e293b">🔄 สุ่มรายการใหม่</button>
+            <button onclick="menuAction(&#39;changebranch&#39;)" style="display:flex;align-items:center;gap:10px;width:100%;padding:11px 14px;border:none;background:transparent;color:#f87171;font-size:13px;cursor:pointer;text-align:left">🔁 เปลี่ยนสาขา</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;background:#1e293b;border-bottom:1px solid #334155;max-width:600px;margin:0 auto">
+    <button onclick="switchTab(&#39;today&#39;)" id="tab-today" style="flex:1;padding:12px;border:none;cursor:pointer;font-size:13px;background:#0f172a;color:#60a5fa;border-bottom:2px solid #3b82f6;font-weight:600">📋 วันนี้</button>
+    <button onclick="switchTab(&#39;history&#39;)" id="tab-history" style="flex:1;padding:12px;border:none;cursor:pointer;font-size:13px;background:transparent;color:#64748b;border-bottom:2px solid transparent;font-weight:400">📊 ประวัติ</button>
+  </div>
+  <div id="tab-content" style="max-width:600px;margin:0 auto;padding-bottom:120px"><div style="padding:60px 24px;text-align:center"><div style="font-size:48px">📂</div><div style="font-size:16px;font-weight:600;color:#94a3b8;margin-top:12px">ยังไม่มีข้อมูลยา</div><div style="font-size:13px;color:#475569;margin-top:6px;line-height:1.7">Import Excel จาก CW ก่อนครั้งแรก<br>ทำครั้งเดียว ใช้ได้ทุกสาขา</div><button onclick="menuAction(&#39;import&#39;)" style="margin-top:20px;padding:12px 28px;border-radius:10px;border:none;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;font-size:14px;font-weight:700;cursor:pointer">📂 Import Excel</button></div></div>
+  <div id="bottom-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1e293b;border-top:1px solid #334155;padding:12px 16px">
+    <div style="max-width:600px;margin:0 auto;display:flex;gap:10px">
+      <button onclick="submitAll()" style="flex:1;padding:11px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#94a3b8;font-size:13px;cursor:pointer">✅ บันทึกทั้งหมด</button>
+      <button onclick="syncToSheet()" id="btn-sync" style="flex:2;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;font-size:13px;font-weight:700;cursor:pointer">☁️ Sync ขึ้น Sheet (0 รายการ)</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT -->
+<div id="screen-import" class="screen">
+  <div style="background:#1e293b;padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #334155">
+    <button onclick="showScreen(&#39;main&#39;)" style="background:none;border:none;color:#60a5fa;font-size:22px;cursor:pointer;padding:0;line-height:1">←</button>
+    <span style="font-size:16px;font-weight:700">Import ข้อมูลยา (ทุกสาขา)</span>
+  </div>
+  <div style="padding:16px;max-width:600px;margin:0 auto">
+    <div id="import-notice" style="display:none;background:#1e3a5f;border:1px solid #1d4ed8;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#93c5fd"></div>
+    <div onclick="document.getElementById(&#39;xlsx-input&#39;).click()" style="border:2px dashed #334155;border-radius:12px;padding:36px 16px;text-align:center;cursor:pointer;background:#1e293b">
+      <div style="font-size:40px">📂</div>
+      <div style="font-size:14px;color:#94a3b8;margin-top:8px">แตะเพื่อเลือกไฟล์ Excel จาก CW</div>
+      <div style="font-size:11px;color:#475569;margin-top:4px">.xlsx / .xls</div>
+    </div>
+    <input id="xlsx-input" type="file" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this)">
+    <div id="import-err" style="display:none;background:#450a0a;border:1px solid #7f1d1d;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:12px;color:#f87171"></div>
+    <div id="import-preview" style="display:none;margin-top:14px">
+      <div id="preview-count" style="font-size:13px;color:#94a3b8;margin-bottom:10px"></div>
+      <div id="col-selects" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"></div>
+      <div style="background:#0f172a;border-radius:8px;padding:10px 12px;font-size:11px;color:#64748b;margin-bottom:12px">💡 ถ้าไม่มีคอลัมน์กลุ่ม ยาทั้งหมดจะถูกจัดเป็นกลุ่ม C แก้ได้ใน "จัดการกลุ่มยา"</div>
+      <div style="background:#0f172a;border-radius:8px;overflow:hidden;margin-bottom:14px">
+        <div style="font-size:11px;color:#475569;padding:8px 12px;border-bottom:1px solid #1e293b">ตัวอย่าง 3 แถวแรก</div>
+        <div style="overflow-x:auto"><table id="preview-table" style="width:100%;border-collapse:collapse;font-size:11px"></table></div>
+      </div>
+      <button onclick="confirmImport()" id="btn-import" style="width:100%;padding:13px;border-radius:10px;border:none;cursor:pointer;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;font-size:14px;font-weight:700"></button>
+    </div>
+  </div>
+</div>
+
+<!-- MANAGE -->
+<div id="screen-manage" class="screen">
+  <div style="background:#1e293b;padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #334155">
+    <button onclick="showScreen(&#39;main&#39;)" style="background:none;border:none;color:#60a5fa;font-size:22px;cursor:pointer;padding:0;line-height:1">←</button>
+    <span style="font-size:16px;font-weight:700">จัดการกลุ่มยา</span>
+  </div>
+  <div style="max-width:600px;margin:0 auto">
+    <div style="padding:12px;display:flex;gap:8px;border-bottom:1px solid #334155">
+      <input id="manage-search" oninput="renderManage()" placeholder="ค้นหายา..." style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:13px;outline:none">
+      <button onclick="saveManage()" id="btn-save-manage" style="padding:8px 16px;border-radius:8px;border:none;background:#2563eb;color:#fff;font-size:13px;font-weight:600;cursor:pointer">บันทึก</button>
+    </div>
+    <div id="manage-stats" style="font-size:11px;color:#475569;padding:6px 14px;background:#0f172a;border-bottom:1px solid #334155"></div>
+    <div id="manage-list" style="padding-bottom:40px"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="screen-dashboard" class="screen">
+  <div style="background:#1e293b;padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #334155">
+    <button onclick="showScreen(&#39;main&#39;)" style="background:none;border:none;color:#60a5fa;font-size:22px;cursor:pointer;padding:0;line-height:1">←</button>
+    <span style="font-size:16px;font-weight:700">Dashboard ทุกสาขา</span>
+    <button onclick="loadDashboard()" style="margin-left:auto;padding:6px 12px;border-radius:7px;border:none;background:#334155;color:#94a3b8;font-size:12px;cursor:pointer">🔄</button>
+  </div>
+  <div style="max-width:600px;margin:0 auto;padding-bottom:40px">
+    <div style="padding:10px 16px;border-bottom:1px solid #334155;display:flex;gap:8px;align-items:center">
+      <span style="font-size:12px;color:#64748b;flex-shrink:0">วันที่:</span>
+      <select id="dash-date" onchange="renderDash()" style="flex:1;padding:6px 10px;border-radius:7px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:13px"></select>
+    </div>
+    <div id="dash-content" style="padding:12px"></div>
+  </div>
+</div>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx5bxNlCW0DR6wqXJgzGcByJcymBUuDi7Zl1u6vdy2qcXhL3yEcsl_XwS2VUW7Rv5uVGA/exec";
+const BRANCHES = ["พระจันทร์เภสัช สาขา 1","พระจันทร์เภสัช สาขา 2","พระจันทร์เภสัช สาขา 3","พระจันทร์เภสัช สาขา 4","บางขุนศรีเภสัช"];
+const GRP = {A:{label:"กลุ่ม A",color:"#ef4444",count:5,freq:"ทุกวัน",desc:"ยาแพง / ยาควบคุม"},B:{label:"กลุ่ม B",color:"#f97316",count:4,freq:"ทุกสัปดาห์",desc:"ยาขายดีสูง"},C:{label:"กลุ่ม C",color:"#22c55e",count:3,freq:"ทุกเดือน",desc:"ยาทั่วไป"}};
+
+let branch = localStorage.getItem("cc_branch")||"";
+let drugs = JSON.parse(localStorage.getItem("cc_drugs")||"[]");
+let manageDrugs=[], todayList=[], counts={}, sysIn={}, submitted={};
+let iHdrs=[], iRows=[], iMap={code:"",name:"",group:"",location:""};
+let dashData=[], selBranch="";
+
+async function api(action,body={}){
+  const r=await fetch(SCRIPT_URL,{method:"POST",body:JSON.stringify({action,...body})});
+  return r.json();
+}
+
+window.onload=function(){
+  if(branch){showScreen("main");initMain();}
+  else{renderBranchList();}
+};
+
+function renderBranchList(){
+  document.getElementById("branch-list").innerHTML=BRANCHES.map(b=>`
+    <button onclick="selectBranch('${b}')" id="br-${CSS.escape(b)}" style="padding:13px 16px;border-radius:10px;border:2px solid #334155;background:#1e293b;color:#94a3b8;font-size:14px;cursor:pointer;text-align:left;width:100%;transition:all 0.15s">${b}</button>
+  `).join("");
+}
+
+function selectBranch(b){
+  selBranch=b;
+  BRANCHES.forEach(br=>{
+    const el=document.getElementById("br-"+CSS.escape(br));
+    if(!el)return;
+    const on=br===b;
+    el.style.borderColor=on?"#3b82f6":"#334155";
+    el.style.background=on?"#1e3a5f":"#1e293b";
+    el.style.color=on?"#60a5fa":"#94a3b8";
+    el.style.fontWeight=on?"700":"400";
+  });
+  const btn=document.getElementById("btn-confirm-branch");
+  btn.disabled=false;btn.style.background="linear-gradient(135deg,#1d4ed8,#2563eb)";btn.style.color="#fff";btn.style.cursor="pointer";
+}
+
+function confirmBranch(){
+  if(!selBranch)return;
+  branch=selBranch;localStorage.setItem("cc_branch",branch);
+  showScreen("main");initMain();
+}
+
+async function initMain(){
+  document.getElementById("header-branch").textContent=branch;
+  try{const r=await api("getDrugs");if(r.drugs&&r.drugs.length){drugs=r.drugs;localStorage.setItem("cc_drugs",JSON.stringify(drugs));}}catch(e){}
+  genToday();switchTab("today");
+}
+
+function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+
+function genToday(src){
+  const s=src||drugs;const g={A:[],B:[],C:[]};
+  s.forEach(d=>g[d.group]?.push(d));
+  todayList=[...shuffle(g.A).slice(0,GRP.A.count),...shuffle(g.B).slice(0,GRP.B.count),...shuffle(g.C).slice(0,GRP.C.count)];
+  counts={};sysIn={};submitted={};updateBar();
+}
+
+function updateHeader(){
+  const done=todayList.filter(d=>submitted[d.id]).length;
+  document.getElementById("header-progress").textContent=done+"/"+todayList.length+" เสร็จ";
+}
+
+function updateBar(){
+  const n=Object.keys(submitted).length;
+  const bar=document.getElementById("bottom-bar");
+  bar.style.display=n>0?"block":"none";
+  document.getElementById("btn-sync").textContent="☁️ Sync ขึ้น Sheet ("+n+" รายการ)";
+}
+
+function switchTab(tab){
+  ["today","history"].forEach(t=>{
+    const el=document.getElementById("tab-"+t);
+    const on=t===tab;
+    el.style.background=on?"#0f172a":"transparent";
+    el.style.color=on?"#60a5fa":"#64748b";
+    el.style.borderBottom=on?"2px solid #3b82f6":"2px solid transparent";
+    el.style.fontWeight=on?"600":"400";
+  });
+  if(tab==="today")renderToday();else renderHistory();
+}
+
+function renderToday(){
+  const done=todayList.filter(d=>submitted[d.id]).length;
+  const errs=Object.values(submitted).filter(r=>!r.ok).length;
+  const pct=todayList.length?done/todayList.length*100:0;
+  if(!drugs.length){
+    document.getElementById("tab-content").innerHTML=`<div style="padding:60px 24px;text-align:center"><div style="font-size:48px">📂</div><div style="font-size:16px;font-weight:600;color:#94a3b8;margin-top:12px">ยังไม่มีข้อมูลยา</div><div style="font-size:13px;color:#475569;margin-top:6px;line-height:1.7">Import Excel จาก CW ก่อนครั้งแรก<br>ทำครั้งเดียว ใช้ได้ทุกสาขา</div><button onclick="menuAction('import')" style="margin-top:20px;padding:12px 28px;border-radius:10px;border:none;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;font-size:14px;font-weight:700;cursor:pointer">📂 Import Excel</button></div>`;
+    return;
+  }
+  let h=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:#334155">
+    <div style="background:#1e293b;padding:12px 8px;text-align:center"><div class="mono" style="font-size:22px;font-weight:700;color:#60a5fa">${todayList.length}</div><div style="font-size:11px;color:#64748b;margin-top:2px">ต้องนับ</div></div>
+    <div style="background:#1e293b;padding:12px 8px;text-align:center"><div class="mono" style="font-size:22px;font-weight:700;color:#34d399">${done}</div><div style="font-size:11px;color:#64748b;margin-top:2px">นับแล้ว</div></div>
+    <div style="background:#1e293b;padding:12px 8px;text-align:center"><div class="mono" style="font-size:22px;font-weight:700;color:${errs>0?"#f87171":"#34d399"}">${errs}</div><div style="font-size:11px;color:#64748b;margin-top:2px">ไม่ตรง</div></div>
+  </div>
+  <div style="background:#1e293b;padding:8px 16px;border-bottom:1px solid #334155">
+    <div style="background:#334155;border-radius:4px;height:5px;overflow:hidden"><div style="width:${pct}%;background:linear-gradient(90deg,#3b82f6,#34d399);height:100%;transition:width 0.4s;border-radius:4px"></div></div>
+  </div>`;
+  ["A","B","C"].forEach(grp=>{
+    const gd=todayList.filter(d=>d.group===grp);if(!gd.length)return;
+    const cfg=GRP[grp];
+    h+=`<div style="padding:10px 16px 6px;display:flex;align-items:center;gap:8px;border-left:3px solid ${cfg.color};background:#0f172a;margin-top:4px"><span style="font-size:13px;font-weight:700;color:${cfg.color}">${cfg.label}</span><span style="font-size:11px;color:#64748b">— ${cfg.desc} · ${cfg.freq}</span></div>`;
+    gd.forEach(drug=>{
+      const res=submitted[drug.id];const isDone=!!res;const isOk=res?.ok;
+      const sv=sysIn[drug.id]??"";const cv=counts[drug.id]??"";const ok2=sv!=""&&cv!="";
+      h+=`<div id="card-${drug.id}" style="margin:6px 12px;border-radius:10px;overflow:hidden;border:1px solid ${isDone?(isOk?"#16a34a44":"#dc262644"):"#334155"};background:${isDone?(isOk?"#052e1611":"#450a0a11"):"#1e293b"}">
+        <div style="padding:10px 14px;display:flex;align-items:center;gap:10px">
+          <div style="width:34px;height:34px;border-radius:8px;background:${cfg.color}22;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">${isDone?(isOk?"✅":"⚠️"):"💊"}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${drug.name}</div>
+            <div style="font-size:11px;color:#64748b;display:flex;gap:8px;margin-top:2px;flex-wrap:wrap"><span class="mono">${drug.code}</span>${drug.location&&drug.location!=="—"?`<span>📍 ${drug.location}</span>`:""}</div>
+          </div>
+        </div>`;
+      if(!isDone){h+=`<div style="padding:0 14px 12px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;gap:8px">
+          <div style="flex:1"><div style="font-size:10px;color:#64748b;margin-bottom:4px">จำนวนในระบบ CW</div>
+            <input type="number" value="${sv}" placeholder="ดูจาก CW..." oninput="sysIn[${drug.id}]=this.value;chk(${drug.id})" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid #1d4ed8;background:#0f172a;color:#60a5fa;font-size:14px;font-family:'JetBrains Mono',monospace;outline:none"></div>
+          <div style="flex:1"><div style="font-size:10px;color:#64748b;margin-bottom:4px">จำนวนที่นับจริง</div>
+            <input type="number" value="${cv}" placeholder="นับได้..." oninput="counts[${drug.id}]=this.value" onkeydown="if(event.key==='Enter')submitDrug(${drug.id})" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:14px;font-family:'JetBrains Mono',monospace;outline:none"></div>
+        </div>
+        <button id="savebtn-${drug.id}" onclick="submitDrug(${drug.id})" ${ok2?"":"disabled"} style="width:100%;padding:9px;border-radius:8px;border:none;cursor:${ok2?"pointer":"not-allowed"};background:${ok2?"#3b82f6":"#334155"};color:${ok2?"#fff":"#64748b"};font-size:13px;font-weight:600">บันทึก</button>
+      </div>`;}
+      else{h+=`<div style="padding:0 14px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><div style="font-size:12px;color:#64748b">ระบบ <span class="mono" style="color:#60a5fa">${res.systemQty}</span> → นับ <span class="mono" style="font-weight:700;color:#e2e8f0">${res.actualQty}</span></div><div class="mono" style="font-size:13px;font-weight:700;color:${isOk?"#34d399":"#f87171"};background:${isOk?"#05150d":"#2d0b0b"};padding:2px 10px;border-radius:6px;margin-left:auto">${isOk?"ตรง ✓":(res.diff>0?"+":"")+res.diff+" ❗"}</div></div>`;}
+      h+=`</div>`;
+    });
+  });
+  document.getElementById("tab-content").innerHTML=h;
+  updateHeader();updateBar();
+}
+
+function chk(id){
+  const ok=(sysIn[id]??"")!==""&&(counts[id]??"")!=="";
+  const b=document.getElementById("savebtn-"+id);
+  if(b){b.disabled=!ok;b.style.background=ok?"#3b82f6":"#334155";b.style.color=ok?"#fff":"#64748b";b.style.cursor=ok?"pointer":"not-allowed";}
+}
+
+function submitDrug(id){
+  const drug=todayList.find(d=>d.id==id);if(!drug)return;
+  const a=parseInt(counts[id]);const s=parseInt(sysIn[id]);
+  if(isNaN(a)||isNaN(s))return;
+  const diff=a-s;
+  submitted[id]={drugId:drug.id,code:drug.code,name:drug.name,group:drug.group,systemQty:s,actualQty:a,diff,ok:diff===0};
+  renderToday();
+}
+
+function submitAll(){
+  todayList.forEach(drug=>{
+    if(!submitted[drug.id]){
+      const a=parseInt(counts[drug.id]);const s=parseInt(sysIn[drug.id]);
+      if(!isNaN(a)&&!isNaN(s)){const diff=a-s;submitted[drug.id]={drugId:drug.id,code:drug.code,name:drug.name,group:drug.group,systemQty:s,actualQty:a,diff,ok:diff===0};}
+    }
+  });renderToday();
+}
+
+async function syncToSheet(){
+  const results=Object.values(submitted);if(!results.length)return;
+  const btn=document.getElementById("btn-sync");btn.textContent="กำลัง Sync...";btn.disabled=true;
+  try{await api("submitCount",{branch,results});alert("✅ Sync สำเร็จ "+results.length+" รายการ");}
+  catch(e){alert("❌ Sync ไม่สำเร็จ: "+e.message);}
+  btn.disabled=false;updateBar();
+}
+
+function renderHistory(){
+  document.getElementById("tab-content").innerHTML=`<div style="padding:40px;text-align:center;color:#475569"><div style="font-size:40px">📊</div><div style="margin-top:12px;font-size:14px">ดูประวัติและเปรียบสาขาได้ที่ Dashboard</div><button onclick="showScreen('dashboard');loadDashboard()" style="margin-top:16px;padding:12px 24px;border-radius:10px;border:none;background:#1e3a5f;color:#60a5fa;font-size:14px;font-weight:700;cursor:pointer">📊 Dashboard ทุกสาขา</button></div>`;
+}
+
+function handleFile(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:"binary"});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const data=XLSX.utils.sheet_to_json(ws,{header:1});
+      if(data.length<2){showImpErr("ไฟล์ว่าง");return;}
+      iHdrs=data[0].map(h=>String(h??"").trim());
+      iRows=data.slice(1).filter(r=>r.some(c=>c!==undefined&&c!==""));
+      iMap={code:"",name:"",group:"",location:""};
+      iHdrs.forEach(h=>{const l=h.toLowerCase();
+        if(!iMap.code&&(l.includes("รหัส")||l.includes("code")))iMap.code=h;
+        if(!iMap.name&&(l.includes("ชื่อ")||l.includes("name")||l.includes("ยา")))iMap.name=h;
+        if(!iMap.group&&(l.includes("กลุ่ม")||l.includes("group")))iMap.group=h;
+        if(!iMap.location&&(l.includes("ตำแหน่ง")||l.includes("shelf")||l.includes("rack")||l.includes("ชั้น")))iMap.location=h;
+      });
+      renderImpPreview();
+    }catch{showImpErr("อ่านไฟล์ไม่ได้");}
+  };
+  reader.readAsBinaryString(file);
+}
+
+function showImpErr(m){const el=document.getElementById("import-err");el.textContent="⚠️ "+m;el.style.display="block";}
+
+function mkSel(label,field){
+  return `<div><div style="font-size:10px;color:#64748b;margin-bottom:4px">${label}</div>
+    <select onchange="iMap['${field}']=this.value;renderPrevTable()" style="width:100%;padding:7px 8px;border-radius:7px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px">
+      <option value="">— ไม่มี —</option>
+      ${iHdrs.map(h=>`<option value="${h}" ${iMap[field]===h?"selected":""}>${h}</option>`).join("")}
+    </select></div>`;
+}
+
+function renderImpPreview(){
+  document.getElementById("import-err").style.display="none";
+  document.getElementById("preview-count").innerHTML=`พบ <b style="color:#60a5fa">${iRows.length} รายการ</b> — กำหนด column:`;
+  document.getElementById("col-selects").innerHTML=mkSel("รหัสยา","code")+mkSel("ชื่อยา *","name")+mkSel("กลุ่ม A/B/C","group")+mkSel("ตำแหน่ง","location");
+  renderPrevTable();
+  document.getElementById("import-preview").style.display="block";
+  document.getElementById("btn-import").textContent=`✅ นำเข้า ${iRows.length} รายการ (ทุกสาขา)`;
+}
+
+function renderPrevTable(){
+  const get=(row,col)=>col?String(row[iHdrs.indexOf(col)]??"").trim():"—";
+  document.getElementById("preview-table").innerHTML=
+    `<thead><tr>${["Code","Name","Group","Location"].map(h=>`<th style="padding:6px 10px;color:#64748b;text-align:left;border-bottom:1px solid #1e293b;white-space:nowrap">${h}</th>`).join("")}</tr></thead>
+    <tbody>${iRows.slice(0,3).map((row,i)=>`<tr>
+      <td style="padding:6px 10px;color:#60a5fa;font-family:'JetBrains Mono',monospace">${get(row,iMap.code)||"D"+String(i+1).padStart(4,"0")}</td>
+      <td style="padding:6px 10px;color:#e2e8f0">${get(row,iMap.name)}</td>
+      <td style="padding:6px 10px;color:#f97316">${get(row,iMap.group)||"C"}</td>
+      <td style="padding:6px 10px;color:#94a3b8">${get(row,iMap.location)||"—"}</td>
+    </tr>`).join("")}</tbody>`;
+}
+
+async function confirmImport(){
+  if(!iMap.name){showImpErr("กรุณาเลือกคอลัมน์ชื่อยา");return;}
+  const btn=document.getElementById("btn-import");btn.textContent="กำลังบันทึก...";btn.disabled=true;
+  const newDrugs=iRows.map((row,i)=>{
+    const get=col=>col?String(row[iHdrs.indexOf(col)]??"").trim():"";
+    const grp=get(iMap.group).toUpperCase();
+    return{id:i+1,code:get(iMap.code)||"D"+String(i+1).padStart(4,"0"),name:get(iMap.name),group:["A","B","C"].includes(grp)?grp:"C",location:get(iMap.location)||"—"};
+  }).filter(d=>d.name);
+  try{
+    await api("saveDrugs",{drugs:newDrugs});
+    drugs=newDrugs;localStorage.setItem("cc_drugs",JSON.stringify(drugs));
+    genToday(drugs);showScreen("main");switchTab("today");
+  }catch(e){showImpErr("บันทึกไม่สำเร็จ: "+e.message);btn.disabled=false;btn.textContent=`✅ นำเข้า ${iRows.length} รายการ`;}
+}
+
+function renderManage(){
+  const s=document.getElementById("manage-search").value.toLowerCase();
+  const f=manageDrugs.filter(d=>d.name.toLowerCase().includes(s)||d.code.toLowerCase().includes(s));
+  document.getElementById("manage-stats").textContent=`${manageDrugs.filter(d=>d.group==="A").length}A · ${manageDrugs.filter(d=>d.group==="B").length}B · ${manageDrugs.filter(d=>d.group==="C").length}C · รวม ${manageDrugs.length} รายการ`;
+  document.getElementById("manage-list").innerHTML=f.map(drug=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #1e293b">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${drug.name}</div>
+        <div style="font-size:11px;color:#64748b;font-family:'JetBrains Mono',monospace">${drug.code}</div>
+      </div>
+      <div style="display:flex;gap:4px">
+        ${["A","B","C"].map(g=>`<button onclick="setGrp(${drug.id},'${g}')" style="width:28px;height:28px;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:700;background:${drug.group===g?GRP[g].color:"#334155"};color:${drug.group===g?"#fff":"#64748b"}">${g}</button>`).join("")}
+      </div>
+    </div>`).join("");
+}
+
+function setGrp(id,grp){manageDrugs=manageDrugs.map(d=>d.id==id?{...d,group:grp}:d);renderManage();}
+
+async function saveManage(){
+  const btn=document.getElementById("btn-save-manage");btn.textContent="...";btn.disabled=true;
+  try{await api("saveDrugs",{drugs:manageDrugs});drugs=manageDrugs;localStorage.setItem("cc_drugs",JSON.stringify(drugs));genToday(drugs);showScreen("main");}
+  catch(e){alert("บันทึกไม่สำเร็จ");}
+  btn.textContent="บันทึก";btn.disabled=false;
+}
+
+async function loadDashboard(){
+  document.getElementById("dash-content").innerHTML=`<div style="padding:40px;text-align:center;color:#475569;font-size:13px">กำลังโหลด...</div>`;
+  try{
+    const r=await api("getDashboard",{});dashData=r.summary||[];
+    const dates=[...new Set(dashData.map(s=>s.date))].sort((a,b)=>b.localeCompare(a));
+    const sel=document.getElementById("dash-date");
+    sel.innerHTML=dates.length?dates.map(d=>`<option value="${d}">${new Date(d).toLocaleDateString("th-TH",{weekday:"short",day:"numeric",month:"long",year:"numeric"})}</option>`).join(""):`<option>ยังไม่มีข้อมูล</option>`;
+    renderDash();
+  }catch(e){document.getElementById("dash-content").innerHTML=`<div style="padding:24px;color:#f87171;font-size:13px">โหลดไม่สำเร็จ: ${e.message}</div>`;}
+}
+
+function renderDash(){
+  const date=document.getElementById("dash-date").value;
+  const day=dashData.filter(s=>s.date===date);
+  if(!day.length){document.getElementById("dash-content").innerHTML=`<div style="padding:40px;text-align:center;color:#475569"><div style="font-size:40px">📭</div><div style="margin-top:12px;font-size:14px">ยังไม่มีข้อมูลในวันนี้</div></div>`;return;}
+  const bMap={};day.forEach(s=>{bMap[s.branch]=s;});
+  const cx={};
+  day.forEach(s=>(s.items||[]).forEach(item=>{
+    if(!cx[item.code])cx[item.code]={name:item.name,branches:[]};
+    cx[item.code].branches.push({branch:s.branch,diff:Number(item.diff),systemQty:item.systemQty,actualQty:item.actualQty});
+  }));
+  const multi=Object.entries(cx).filter(([,v])=>v.branches.length>1);
+  let h=`<div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:10px;letter-spacing:1px">สรุปแต่ละสาขา</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">`;
+  BRANCHES.forEach(br=>{
+    const d=bMap[br];
+    if(!d){h+=`<div style="background:#1e293b;border-radius:10px;padding:12px 14px;border:1px solid #334155;opacity:0.5"><div style="font-size:12px;font-weight:600;color:#64748b">${br}</div><div style="font-size:11px;color:#475569;margin-top:4px">ยังไม่ได้นับ</div></div>`;return;}
+    const acc=d.total>0?Math.round((d.total-d.errors)/d.total*100):0;const ok=d.errors===0;
+    h+=`<div style="background:#1e293b;border-radius:10px;padding:12px 14px;border:1px solid ${ok?"#16a34a44":"#dc262644"}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="font-size:12px;font-weight:700;color:#e2e8f0">${br}</div>
+        <div class="mono" style="font-size:18px;font-weight:800;color:${ok?"#34d399":"#f87171"}">${acc}%</div>
+      </div>
+      <div style="margin-top:6px;display:flex;gap:10px">
+        <div style="font-size:11px;color:#64748b">นับ <b style="color:#e2e8f0">${d.total}</b></div>
+        <div style="font-size:11px;color:#64748b">ผิด <b style="color:${d.errors>0?"#f87171":"#34d399"}">${d.errors}</b></div>
+      </div>
+      <div style="margin-top:7px;background:#334155;border-radius:3px;height:4px;overflow:hidden"><div style="width:${d.total>0?(d.errors/d.total*100):0}%;background:#ef4444;height:100%"></div></div>
+      ${d.errors>0?(d.items||[]).slice(0,3).map(item=>`<div style="font-size:10px;color:#f87171;display:flex;justify-content:space-between;padding:2px 0;margin-top:4px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70%">${item.name}</span><span class="mono">${Number(item.diff)>0?"+":""}${item.diff}</span></div>`).join("")+(d.errors>3?`<div style="font-size:10px;color:#64748b;margin-top:2px">+${d.errors-3} รายการอื่น</div>`:""):""}
+    </div>`;
+  });
+  h+=`</div>`;
+  if(multi.length){
+    h+=`<div style="background:#1e293b;border-radius:12px;padding:14px;border:1px solid #92400e44;margin-bottom:12px"><div style="font-size:13px;font-weight:700;color:#fbbf24;margin-bottom:4px">🔄 ยาที่ผิดหลายสาขาพร้อมกัน</div><div style="font-size:11px;color:#78716c;margin-bottom:12px">อาจเกิดจากการส่งของระหว่างสาขาผิดพลาด</div>`;
+    multi.forEach(([code,data])=>{
+      const diffs=data.branches.map(b=>Number(b.diff));const sum=diffs.reduce((a,b)=>a+b,0);
+      h+=`<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #334155"><div style="font-size:12px;font-weight:700;color:#e2e8f0;margin-bottom:6px">${data.name} <span class="mono" style="color:#60a5fa;font-size:10px">${code}</span></div>
+        ${data.branches.map(b=>`<div style="display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;padding:3px 8px;background:#0f172a;border-radius:5px;margin-bottom:3px"><span>${b.branch}</span><span>ระบบ ${b.systemQty} → นับ ${b.actualQty} <b style="color:${Number(b.diff)>0?"#34d399":"#f87171"}">(${Number(b.diff)>0?"+":""}${b.diff})</b></span></div>`).join("")}
+        ${sum===0&&diffs.length===2?`<div style="font-size:10px;color:#fbbf24;margin-top:6px;padding:4px 8px;background:#451a0322;border-radius:5px">💡 ผลรวม = 0 → น่าจะส่งของสลับกัน (${data.branches[0].branch} ↔ ${data.branches[1].branch})</div>`:""}
+      </div>`;
+    });
+    h+=`</div>`;
+  }
+  if(!multi.length&&day.every(d=>d.errors===0))h+=`<div style="background:#052e16;border-radius:10px;padding:14px;border:1px solid #16a34a44;text-align:center"><div style="font-size:24px">🎉</div><div style="font-size:14px;font-weight:700;color:#34d399;margin-top:4px">ทุกสาขาสต็อกตรงหมด!</div></div>`;
+  document.getElementById("dash-content").innerHTML=h;
+}
+
+function showScreen(name){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById("screen-"+name).classList.add("active");
+  if(name==="import"){
+    const n=document.getElementById("import-notice");
+    if(drugs.length){n.textContent=`📦 มีรายการยาอยู่แล้ว ${drugs.length} รายการ — import ใหม่จะแทนที่ทุกสาขา`;n.style.display="block";}
+    else n.style.display="none";
+    document.getElementById("import-preview").style.display="none";
+    document.getElementById("import-err").style.display="none";
+    document.getElementById("xlsx-input").value="";
+  }
+  if(name==="manage"){manageDrugs=drugs.map(d=>({...d}));renderManage();}
+}
+
+function toggleMenu(){const m=document.getElementById("menu-dropdown");m.style.display=m.style.display==="none"?"block":"none";}
+function menuAction(a){
+  document.getElementById("menu-dropdown").style.display="none";
+  if(a==="import")showScreen("import");
+  else if(a==="manage")showScreen("manage");
+  else if(a==="reshuffle"){genToday();switchTab("today");}
+  else if(a==="changebranch"){localStorage.removeItem("cc_branch");branch="";selBranch="";showScreen("setup");renderBranchList();}
+}
+document.addEventListener("click",e=>{
+  const m=document.getElementById("menu-dropdown");const b=document.getElementById("btn-menu");
+  if(m&&b&&!b.contains(e.target)&&!m.contains(e.target))m.style.display="none";
+});
+</script>
+
+
+</body></html>
