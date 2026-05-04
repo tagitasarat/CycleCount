@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0049)file:///C:/Users/acer/Downloads/cyclecount_2.html -->
+<!-- saved from url=(0049)file:///C:/Users/acer/Downloads/cyclecount_3.html -->
 <html lang="th"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -310,17 +310,27 @@ function handleFile(input){
       const ws=wb.Sheets[wb.SheetNames[0]];
       const data=XLSX.utils.sheet_to_json(ws,{header:1});
       if(data.length<2){showImpErr("ไฟล์ว่าง");return;}
-      iHdrs=data[0].map(h=>String(h??"").trim());
-      iRows=data.slice(1).filter(r=>r.some(c=>c!==undefined&&c!==""));
+      // Auto-detect header row รองรับ CW report ที่มี header หลายแถว
+      let hIdx=0;
+      for(let i=0;i<Math.min(data.length,15);i++){
+        const s=data[i].map(c=>String(c??"")).join(" ");
+        if(s.includes("รหัสสินค้า")||s.includes("ชื่อสินค้า")){hIdx=i;break;}
+      }
+      const rawHdrs=data[hIdx].map(h=>String(h??"").trim());
+      // เก็บเฉพาะ column ที่มี header (กรอง merged cells ที่เป็น null ออก)
+      const validCols=rawHdrs.map((h,i)=>({h,i})).filter(x=>x.h);
+      iHdrs=validCols.map(x=>x.h);
+      window._colMap=validCols.map(x=>x.i); // index จริงใน raw row
+      iRows=data.slice(hIdx+1).filter(r=>r.some(c=>c!==undefined&&c!=="")&&!String(r[0]??"").includes("รวม"));
       iMap={code:"",name:"",group:"",location:""};
       iHdrs.forEach(h=>{const l=h.toLowerCase();
-        if(!iMap.code&&(l.includes("รหัส")||l.includes("code")))iMap.code=h;
-        if(!iMap.name&&(l.includes("ชื่อ")||l.includes("name")||l.includes("ยา")))iMap.name=h;
+        if(!iMap.code&&(l.includes("รหัสสินค้า")||l.includes("รหัส")||l.includes("code")))iMap.code=h;
+        if(!iMap.name&&(l.includes("ชื่อสินค้า")||l.includes("ชื่อ")||l.includes("name")))iMap.name=h;
         if(!iMap.group&&(l.includes("กลุ่ม")||l.includes("group")))iMap.group=h;
         if(!iMap.location&&(l.includes("ตำแหน่ง")||l.includes("shelf")||l.includes("rack")||l.includes("ชั้น")))iMap.location=h;
       });
       renderImpPreview();
-    }catch{showImpErr("อ่านไฟล์ไม่ได้");}
+    }catch(err){showImpErr("อ่านไฟล์ไม่ได้: "+err.message);}
   };
   reader.readAsBinaryString(file);
 }
@@ -345,7 +355,12 @@ function renderImpPreview(){
 }
 
 function renderPrevTable(){
-  const get=(row,col)=>col?String(row[iHdrs.indexOf(col)]??"").trim():"—";
+  const get=(row,col)=>{
+    if(!col)return"—";
+    const hIdx=iHdrs.indexOf(col);
+    const realIdx=window._colMap?window._colMap[hIdx]:hIdx;
+    return String(row[realIdx]??"").trim()||"—";
+  };
   document.getElementById("preview-table").innerHTML=
     `<thead><tr>${["Code","Name","Group","Location"].map(h=>`<th style="padding:6px 10px;color:#64748b;text-align:left;border-bottom:1px solid #1e293b;white-space:nowrap">${h}</th>`).join("")}</tr></thead>
     <tbody>${iRows.slice(0,3).map((row,i)=>`<tr>
@@ -360,7 +375,12 @@ async function confirmImport(){
   if(!iMap.name){showImpErr("กรุณาเลือกคอลัมน์ชื่อยา");return;}
   const btn=document.getElementById("btn-import");btn.textContent="กำลังบันทึก...";btn.disabled=true;
   const newDrugs=iRows.map((row,i)=>{
-    const get=col=>col?String(row[iHdrs.indexOf(col)]??"").trim():"";
+    const get=col=>{
+      if(!col)return"";
+      const hIdx=iHdrs.indexOf(col);
+      const realIdx=window._colMap?window._colMap[hIdx]:hIdx;
+      return String(row[realIdx]??"").trim();
+    };
     const grp=get(iMap.group).toUpperCase();
     return{id:i+1,code:get(iMap.code)||"D"+String(i+1).padStart(4,"0"),name:get(iMap.name),group:["A","B","C"].includes(grp)?grp:"C",location:get(iMap.location)||"—"};
   }).filter(d=>d.name);
